@@ -8,28 +8,33 @@ interface PDFUploadProps {
   onFileProcessed: (data: ExtractedReport) => void;
   onProcessingStart: () => void;
   onProcessingEnd: () => void;
+  onProcessingError: (error: string | null) => void;
+  errorMessage: string | null;
+  hasError: boolean;
 }
 
 export default function PDFUpload({
   onFileProcessed,
   onProcessingStart,
   onProcessingEnd,
+  onProcessingError,
+  errorMessage,
+  hasError,
 }: PDFUploadProps) {
-  const [uploadError, setUploadError] = useState<string | null>(null);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
-    setUploadError(null);
 
+
+  const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     if (rejectedFiles.length > 0) {
-      setUploadError("Please upload a valid PDF file (max 100MB)");
+      onProcessingError("Please upload a valid PDF file (max 100MB)");
       return;
     }
 
     if (acceptedFiles.length > 0) {
       setSelectedFile(acceptedFiles[0]);
     }
-  }, []);
+  }, [onProcessingError]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -38,30 +43,27 @@ export default function PDFUpload({
     },
     maxFiles: 1,
     maxSize: 100 * 1024 * 1024, // 100MB
+    disabled: !!errorMessage, // Disable when there's an error
   });
 
   const handleUpload = async () => {
     if (!selectedFile) return;
 
     try {
-      setUploadError(null);
       onProcessingStart();
-
       const result = await uploadAndProcessPDF(selectedFile);
       onFileProcessed(result);
     } catch (error) {
       console.error("Upload error:", error);
-      const errorMessage =
-        error instanceof Error ? error.message : "Failed to process PDF";
-      setUploadError(errorMessage);
-      onProcessingEnd(); // Reset loading state on error
+      const errorMsg = error instanceof Error ? error.message : "Failed to process PDF";
+      onProcessingError(errorMsg);
       // Keep selectedFile so user can see error and retry
+
     }
   };
 
   const removeFile = () => {
     setSelectedFile(null);
-    setUploadError(null);
   };
 
   return (
@@ -70,11 +72,13 @@ export default function PDFUpload({
       <div
         {...getRootProps()}
         className={`
-          border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors duration-200
+          border-2 border-dashed rounded-xl p-8 text-center transition-colors duration-200
           ${
-            isDragActive
-              ? "border-primary-500 bg-primary-50"
-              : "border-gray-300 hover:border-primary-400 hover:bg-gray-50"
+            errorMessage
+              ? "border-gray-200 bg-gray-50 cursor-not-allowed opacity-50"
+              : isDragActive
+              ? "border-primary-500 bg-primary-50 cursor-pointer"
+              : "border-gray-300 hover:border-primary-400 hover:bg-gray-50 cursor-pointer"
           }
         `}
       >
@@ -127,7 +131,7 @@ export default function PDFUpload({
       )}
 
       {/* Error Message */}
-      {uploadError && (
+      {errorMessage && (
         <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg shadow-sm">
           <div className="flex items-start">
             <div className="flex-shrink-0">
@@ -137,10 +141,12 @@ export default function PDFUpload({
               <h3 className="text-sm font-medium text-red-800">
                 Processing Failed
               </h3>
-              <p className="text-sm text-red-700 mt-1">{uploadError}</p>
+              <p className="text-sm text-red-700 mt-1">{errorMessage}</p>
               <div className="mt-3 flex space-x-3">
                 <button
-                  onClick={() => setUploadError(null)}
+                  onClick={() => {
+                    onProcessingError(null);
+                  }}
                   className="text-sm bg-red-100 text-red-800 px-3 py-1 rounded-md hover:bg-red-200 transition-colors"
                 >
                   Dismiss

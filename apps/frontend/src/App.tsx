@@ -7,19 +7,33 @@ import { ExtractedReport } from './types/report'
 function App() {
   const [extractedData, setExtractedData] = useState<ExtractedReport | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
+  const [hasError, setHasError] = useState(false)
+  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+
+
 
   const handleFileProcessed = (data: ExtractedReport) => {
     setExtractedData(data)
     setIsProcessing(false)
+    setHasError(false)
+    setErrorMessage(null)
   }
 
   const handleProcessingStart = () => {
     setIsProcessing(true)
     setExtractedData(null)
+    setHasError(false)
+    setErrorMessage(null)
   }
 
   const handleProcessingEnd = () => {
     setIsProcessing(false)
+  }
+
+  const handleProcessingError = (error: string | null) => {
+    setIsProcessing(false)
+    setHasError(!!error)
+    setErrorMessage(error)
   }
 
   return (
@@ -39,7 +53,40 @@ function App() {
 
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {!extractedData && !isProcessing ? (
+        {isProcessing ? (
+          /* Processing State */
+          <div className="text-center py-16">
+            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
+            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Processing PDF...</h2>
+            <p className="text-gray-600">
+              Extracting and categorizing data from your document. This may take a few minutes.
+            </p>
+          </div>
+        ) : extractedData ? (
+          /* Dashboard Section */
+          <div>
+            <div className="flex items-center justify-between mb-8">
+              <div className="flex items-center space-x-3">
+                <BarChart3 className="h-8 w-8 text-primary-600" />
+                <div>
+                  <h2 className="text-3xl font-semibold text-gray-900">Extraction Results</h2>
+                  <p className="text-gray-600">Categorized data from your PDF document</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setExtractedData(null)
+                  setIsProcessing(false)
+                  setHasError(false)
+                }}
+                className="btn-secondary"
+              >
+                Upload New PDF
+              </button>
+            </div>
+            <Dashboard data={extractedData} />
+          </div>
+        ) : (
           /* Upload Section */
           <div className="text-center">
             <div className="mb-8">
@@ -56,39 +103,10 @@ function App() {
               onFileProcessed={handleFileProcessed}
               onProcessingStart={handleProcessingStart}
               onProcessingEnd={handleProcessingEnd}
+              onProcessingError={handleProcessingError}
+              errorMessage={errorMessage}
+              hasError={hasError}
             />
-          </div>
-        ) : isProcessing ? (
-          /* Processing State */
-          <div className="text-center py-16">
-            <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
-            <h2 className="text-2xl font-semibold text-gray-900 mb-2">Processing PDF...</h2>
-            <p className="text-gray-600">
-              Extracting and categorizing data from your document. This may take a few minutes.
-            </p>
-          </div>
-        ) : (
-          /* Dashboard Section */
-          <div>
-            <div className="flex items-center justify-between mb-8">
-              <div className="flex items-center space-x-3">
-                <BarChart3 className="h-8 w-8 text-primary-600" />
-                <div>
-                  <h2 className="text-3xl font-semibold text-gray-900">Extraction Results</h2>
-                  <p className="text-gray-600">Categorized data from your PDF document</p>
-                </div>
-              </div>
-              <button
-                onClick={() => {
-                  setExtractedData(null)
-                  setIsProcessing(false)
-                }}
-                className="btn-secondary"
-              >
-                Upload New PDF
-              </button>
-            </div>
-            <Dashboard data={extractedData} />
           </div>
         )}
       </main>
