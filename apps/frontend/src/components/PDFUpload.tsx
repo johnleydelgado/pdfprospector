@@ -7,9 +7,10 @@ import { uploadAndProcessPDF } from '@/services/api'
 interface PDFUploadProps {
   onFileProcessed: (data: ExtractedReport) => void
   onProcessingStart: () => void
+  onProcessingEnd: () => void
 }
 
-export default function PDFUpload({ onFileProcessed, onProcessingStart }: PDFUploadProps) {
+export default function PDFUpload({ onFileProcessed, onProcessingStart, onProcessingEnd }: PDFUploadProps) {
   const [uploadError, setUploadError] = useState<string | null>(null)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
 
@@ -47,6 +48,7 @@ export default function PDFUpload({ onFileProcessed, onProcessingStart }: PDFUpl
     } catch (error) {
       setUploadError(error instanceof Error ? error.message : 'Failed to process PDF')
       setSelectedFile(null)
+      onProcessingEnd() // Reset loading state on error
     }
   }
 
@@ -119,12 +121,32 @@ export default function PDFUpload({ onFileProcessed, onProcessingStart }: PDFUpl
 
       {/* Error Message */}
       {uploadError && (
-        <div className="mt-6 p-4 bg-error-50 border border-error-200 rounded-lg">
-          <div className="flex items-center space-x-2">
-            <AlertCircle className="h-5 w-5 text-error-600" />
-            <p className="text-error-700 font-medium">Upload Error</p>
+        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg shadow-sm">
+          <div className="flex items-start">
+            <div className="flex-shrink-0">
+              <AlertCircle className="h-5 w-5 text-red-400" />
+            </div>
+            <div className="ml-3 flex-1">
+              <h3 className="text-sm font-medium text-red-800">Processing Failed</h3>
+              <p className="text-sm text-red-700 mt-1">{uploadError}</p>
+              <div className="mt-3 flex space-x-3">
+                <button
+                  onClick={() => setUploadError(null)}
+                  className="text-sm bg-red-100 text-red-800 px-3 py-1 rounded-md hover:bg-red-200 transition-colors"
+                >
+                  Dismiss
+                </button>
+                {selectedFile && (
+                  <button
+                    onClick={handleUpload}
+                    className="text-sm bg-primary-600 text-white px-3 py-1 rounded-md hover:bg-primary-700 transition-colors"
+                  >
+                    Retry
+                  </button>
+                )}
+              </div>
+            </div>
           </div>
-          <p className="text-error-600 mt-1">{uploadError}</p>
         </div>
       )}
 

@@ -18,6 +18,10 @@ function App() {
     setExtractedData(null)
   }
 
+  const handleProcessingEnd = () => {
+    setIsProcessing(false)
+  }
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -51,6 +55,7 @@ function App() {
             <PDFUpload 
               onFileProcessed={handleFileProcessed}
               onProcessingStart={handleProcessingStart}
+              onProcessingEnd={handleProcessingEnd}
             />
           </div>
         ) : isProcessing ? (
