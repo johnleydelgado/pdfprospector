@@ -52,6 +52,14 @@ apps/backend/uploads/
 *.tmp
 *.temp
 
+# Documentation files (local only)
+CLAUDE.md
+CODE_WALKTHROUGH.md
+DEPLOYMENT.md
+TESTING.md
+EXTRACTION_LOGIC.md
+.serena/
+
 # Keep these files and folders
 !README.md
 !apps/
