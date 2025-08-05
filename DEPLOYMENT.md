@@ -119,7 +119,7 @@ npm run dev
    ```toml
    [build]
      publish = "apps/frontend/dist"
-     command = "cd apps/frontend && npm run build"
+     command = "cd apps/frontend && npm install && npm run build"
 
    [build.environment]
      NODE_VERSION = "18"

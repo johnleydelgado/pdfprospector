@@ -7,19 +7,15 @@ import { uploadAndProcessPDF } from "@/services/api";
 interface PDFUploadProps {
   onFileProcessed: (data: ExtractedReport) => void;
   onProcessingStart: () => void;
-  onProcessingEnd: () => void;
   onProcessingError: (error: string | null) => void;
   errorMessage: string | null;
-  hasError: boolean;
 }
 
 export default function PDFUpload({
   onFileProcessed,
   onProcessingStart,
-  onProcessingEnd,
   onProcessingError,
   errorMessage,
-  hasError,
 }: PDFUploadProps) {
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 

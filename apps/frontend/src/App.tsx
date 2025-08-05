@@ -7,7 +7,6 @@ import { ExtractedReport } from './types/report'
 function App() {
   const [extractedData, setExtractedData] = useState<ExtractedReport | null>(null)
   const [isProcessing, setIsProcessing] = useState(false)
-  const [hasError, setHasError] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
 
@@ -15,24 +14,17 @@ function App() {
   const handleFileProcessed = (data: ExtractedReport) => {
     setExtractedData(data)
     setIsProcessing(false)
-    setHasError(false)
     setErrorMessage(null)
   }
 
   const handleProcessingStart = () => {
     setIsProcessing(true)
     setExtractedData(null)
-    setHasError(false)
     setErrorMessage(null)
-  }
-
-  const handleProcessingEnd = () => {
-    setIsProcessing(false)
   }
 
   const handleProcessingError = (error: string | null) => {
     setIsProcessing(false)
-    setHasError(!!error)
     setErrorMessage(error)
   }
 
@@ -77,7 +69,7 @@ function App() {
                 onClick={() => {
                   setExtractedData(null)
                   setIsProcessing(false)
-                  setHasError(false)
+                  setErrorMessage(null)
                 }}
                 className="btn-secondary"
               >
@@ -102,10 +94,8 @@ function App() {
             <PDFUpload 
               onFileProcessed={handleFileProcessed}
               onProcessingStart={handleProcessingStart}
-              onProcessingEnd={handleProcessingEnd}
               onProcessingError={handleProcessingError}
               errorMessage={errorMessage}
-              hasError={hasError}
             />
           </div>
         )}
