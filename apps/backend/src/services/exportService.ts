@@ -1,5 +1,5 @@
-import { ExtractedReport } from '@/types/report'
-import { createError } from '@/middleware/errorHandler'
+import { ExtractedReport } from '../types/report'
+import { createError } from '../middleware/errorHandler'
 
 export class ExportService {
   async exportData(data: ExtractedReport, format: 'json' | 'csv' | 'excel'): Promise<string | Buffer> {

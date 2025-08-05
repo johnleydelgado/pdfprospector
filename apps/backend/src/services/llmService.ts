@@ -1,8 +1,8 @@
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
-import { ExtractedReport } from "@/types/report";
+import { ExtractedReport } from "../types/report";
 import { PDFContent } from "./pdfProcessor";
-import { createError } from "@/middleware/errorHandler";
+import { createError } from "../middleware/errorHandler";
 import { v4 as uuidv4 } from "uuid";
 
 type Provider = "openai" | "anthropic";

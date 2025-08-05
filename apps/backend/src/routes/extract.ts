@@ -1,10 +1,10 @@
 import { Router, Request, Response } from "express";
 import multer from "multer";
 
-import { asyncHandler, createError } from "@/middleware/errorHandler";
-import { PDFProcessor } from "@/services/pdfProcessor";
-import { LLMService } from "@/services/llmService";
-import { ProcessingRequest } from "@/types/report";
+import { asyncHandler, createError } from "../middleware/errorHandler";
+import { PDFProcessor } from "../services/pdfProcessor";
+import { LLMService } from "../services/llmService";
+import { ProcessingRequest } from "../types/report";
 
 const router = Router();
 

@@ -1,7 +1,7 @@
 import { Router, Request, Response } from 'express'
-import { asyncHandler, createError } from '@/middleware/errorHandler'
-import { ExtractedReport } from '@/types/report'
-import { ExportService } from '@/services/exportService'
+import { asyncHandler, createError } from '../middleware/errorHandler'
+import { ExtractedReport } from '../types/report'
+import { ExportService } from '../services/exportService'
 
 const router = Router()
 const exportService = new ExportService()

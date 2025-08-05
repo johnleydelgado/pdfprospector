@@ -8,11 +8,11 @@ import { config } from "dotenv";
 import path from "path";
 import fs from "fs-extra";
 
-import { errorHandler } from "@/middleware/errorHandler";
-import { validateEnv } from "@/utils/validateEnv";
-import extractRoutes from "@/routes/extract";
-import exportRoutes from "@/routes/export";
-import healthRoutes from "@/routes/health";
+import { errorHandler } from "./middleware/errorHandler";
+import { validateEnv } from "./utils/validateEnv";
+import extractRoutes from "./routes/extract";
+import exportRoutes from "./routes/export";
+import healthRoutes from "./routes/health";
 
 // Load environment variables
 config();

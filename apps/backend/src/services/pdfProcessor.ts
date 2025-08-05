@@ -1,6 +1,6 @@
 import pdfParse from 'pdf-parse'
-import { ProcessingRequest } from '@/types/report'
-import { createError } from '@/middleware/errorHandler'
+import { ProcessingRequest } from '../types/report'
+import { createError } from '../middleware/errorHandler'
 
 export interface PDFContent {
   text: string
