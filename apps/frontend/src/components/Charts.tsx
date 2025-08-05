@@ -48,7 +48,7 @@ export default function Charts({ data }: ChartsProps) {
   }))
 
   // BMP effectiveness distribution
-  const bmpEffectivenessData = data.bmps.map((bmp, index) => ({
+  const bmpEffectivenessData = data.bmps.map((bmp) => ({
     name: bmp.name.length > 20 ? bmp.name.substring(0, 20) + '...' : bmp.name,
     effectiveness: bmp.effectiveness,
     category: bmp.category,
@@ -85,7 +85,7 @@ export default function Charts({ data }: ChartsProps) {
               fill="#8884d8"
               dataKey="value"
             >
-              {goalStatusChartData.map((entry, index) => (
+              {goalStatusChartData.map((_entry, index) => (
                 <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
               ))}
             </Pie>
@@ -111,7 +111,7 @@ export default function Charts({ data }: ChartsProps) {
               label={{ value: 'Effectiveness (%)', angle: -90, position: 'insideLeft' }}
             />
             <Tooltip 
-              formatter={(value, name) => [`${value}%`, 'Effectiveness']}
+              formatter={(value, _name) => [`${value}%`, 'Effectiveness']}
               labelFormatter={(label) => `BMP: ${label}`}
             />
             <Bar dataKey="effectiveness" fill="#3b82f6" />
