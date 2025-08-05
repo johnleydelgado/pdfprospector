@@ -42,16 +42,27 @@ export default function PDFUpload({
     disabled: !!errorMessage, // Disable when there's an error
   });
 
+  /**
+   * Main upload handler - orchestrates the PDF processing workflow
+   * Calls backend API and manages state transitions for success/error cases
+   */
   const handleUpload = async () => {
     if (!selectedFile) return;
 
     try {
+      // Notify parent component that processing has started
       onProcessingStart();
+      
+      // Call backend API to process PDF and extract structured data
       const result = await uploadAndProcessPDF(selectedFile);
+      
+      // Notify parent component of successful extraction
       onFileProcessed(result);
     } catch (error) {
       console.error("Upload error:", error);
       const errorMsg = error instanceof Error ? error.message : "Failed to process PDF";
+      
+      // Notify parent component of error (maintains error state across renders)
       onProcessingError(errorMsg);
       // Keep selectedFile so user can see error and retry
 

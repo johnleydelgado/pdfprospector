@@ -63,3 +63,6 @@ assessment.txt
 !apps/
 !apps/frontend/
 !apps/backend/
+
+/submission
+PDFProspector-Submission.zip

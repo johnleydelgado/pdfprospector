@@ -10,14 +10,19 @@ export interface PDFContent {
 }
 
 export class PDFProcessor {
+  /**
+   * Main text extraction method that converts PDF buffer to structured text
+   * Handles PDF parsing, validation, and text cleaning for LLM processing
+   */
   async extractText(request: ProcessingRequest): Promise<PDFContent> {
     try {
       console.log(`📄 Processing PDF: ${request.fileName} (${request.fileSize} bytes)`)
       
+      // Parse PDF using pdf-parse library with optimized settings
       const data = await pdfParse(request.buffer, {
-        // PDF parsing options
-        max: 0, // No page limit
-        version: 'v1.10.100', // Use specific PDF.js version
+        // PDF parsing options for better text extraction
+        max: 0, // No page limit - process entire document
+        version: 'v1.10.100', // Use specific PDF.js version for consistency
       })
 
       // Validate extracted content

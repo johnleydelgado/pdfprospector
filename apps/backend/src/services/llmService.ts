@@ -7,6 +7,10 @@ import { v4 as uuidv4 } from "uuid";
 
 type Provider = "openai" | "anthropic";
 
+/**
+ * Configuration options for LLM extraction process
+ * Allows customization of AI model behavior and fallback strategies
+ */
 export interface ExtractionOptions {
   // Preferred provider to try first; service will fall back to the other if allowed and available.
   model?: Provider;

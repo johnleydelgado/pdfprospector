@@ -22,15 +22,24 @@ export class ExportService {
   private exportAsCSV(data: ExtractedReport): string {
     const csvSections: string[] = []
 
-    // Summary section
-    csvSections.push('SUMMARY')
-    csvSections.push('Metric,Value')
-    csvSections.push(`Total Goals,${data.summary.totalGoals}`)
-    csvSections.push(`Total BMPs,${data.summary.totalBMPs}`)
-    csvSections.push(`Completion Rate,${data.summary.completionRate}%`)
-    csvSections.push(`Extraction Accuracy,${data.summary.extractionAccuracy || 'N/A'}%`)
-    csvSections.push(`Processing Time,${data.summary.processingTime || 'N/A'}ms`)
-    csvSections.push('')
+    // Create a simple, Excel-compatible CSV with just the main data
+    // Goals section - most important data first
+    if (data.goals.length > 0) {
+      csvSections.push('GOALS')
+      csvSections.push('ID,Title,Description,Status,Priority,Target Date')
+      data.goals.forEach(goal => {
+        const row = [
+          goal.id,
+          `"${goal.title}"`,
+          `"${goal.description}"`,
+          goal.status,
+          goal.priority,
+          goal.targetDate || ''
+        ].join(',')
+        csvSections.push(row)
+      })
+      csvSections.push('')
+    }
 
     // Goals section
     if (data.goals.length > 0) {

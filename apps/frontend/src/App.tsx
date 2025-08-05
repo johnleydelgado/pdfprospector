@@ -5,24 +5,29 @@ import Dashboard from './components/Dashboard'
 import { ExtractedReport } from './types/report'
 
 function App() {
-  const [extractedData, setExtractedData] = useState<ExtractedReport | null>(null)
-  const [isProcessing, setIsProcessing] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  // State management for the application flow
+  const [extractedData, setExtractedData] = useState<ExtractedReport | null>(null) // Stores successful extraction results
+  const [isProcessing, setIsProcessing] = useState(false) // Controls loading/processing state
+  const [errorMessage, setErrorMessage] = useState<string | null>(null) // Manages error messages across the app
 
-
-
+  // Handler for successful PDF processing
+  // Transitions from processing state to dashboard display
   const handleFileProcessed = (data: ExtractedReport) => {
     setExtractedData(data)
     setIsProcessing(false)
     setErrorMessage(null)
   }
 
+  // Handler for starting PDF processing
+  // Clears previous data and enters loading state
   const handleProcessingStart = () => {
     setIsProcessing(true)
     setExtractedData(null)
     setErrorMessage(null)
   }
 
+  // Handler for processing errors
+  // Manages error state at app level to prevent component unmounting
   const handleProcessingError = (error: string | null) => {
     setIsProcessing(false)
     setErrorMessage(error)
@@ -43,10 +48,10 @@ function App() {
         </div>
       </header>
 
-      {/* Main Content */}
+      {/* Main Content - Three-state conditional rendering */}
       <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         {isProcessing ? (
-          /* Processing State */
+          /* Processing State - Shows loading spinner during PDF extraction */
           <div className="text-center py-16">
             <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary-600 mx-auto mb-4"></div>
             <h2 className="text-2xl font-semibold text-gray-900 mb-2">Processing PDF...</h2>
@@ -55,7 +60,7 @@ function App() {
             </p>
           </div>
         ) : extractedData ? (
-          /* Dashboard Section */
+          /* Dashboard Section - Displays extracted data with charts and export options */
           <div>
             <div className="flex items-center justify-between mb-8">
               <div className="flex items-center space-x-3">
@@ -79,7 +84,7 @@ function App() {
             <Dashboard data={extractedData} />
           </div>
         ) : (
-          /* Upload Section */
+          /* Upload Section - Initial state with drag-and-drop interface */
           <div className="text-center">
             <div className="mb-8">
               <Upload className="mx-auto h-16 w-16 text-gray-400 mb-4" />
@@ -91,6 +96,7 @@ function App() {
                 and monitoring metrics with high accuracy using AI-powered analysis.
               </p>
             </div>
+            {/* PDFUpload component handles file selection, upload, and error display */}
             <PDFUpload 
               onFileProcessed={handleFileProcessed}
               onProcessingStart={handleProcessingStart}
