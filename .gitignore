@@ -52,12 +52,10 @@ apps/backend/uploads/
 *.tmp
 *.temp
 
-# Documentation files (local only)
+# Internal files (local only)
 CLAUDE.md
 CODE_WALKTHROUGH.md
-DEPLOYMENT.md
-TESTING.md
-EXTRACTION_LOGIC.md
+assessment.txt
 .serena/
 
 # Keep these files and folders
