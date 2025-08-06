@@ -23,12 +23,28 @@ export default function PDFUpload({
 
   const onDrop = useCallback((acceptedFiles: File[], rejectedFiles: any[]) => {
     if (rejectedFiles.length > 0) {
-      onProcessingError("Please upload a valid PDF file (max 100MB)");
+      const rejection = rejectedFiles[0];
+      let errorMessage = "File upload failed";
+      
+      if (rejection.errors) {
+        const error = rejection.errors[0];
+        if (error.code === 'file-invalid-type') {
+          errorMessage = `Invalid file format. Only PDF files are supported. You uploaded: ${rejection.file.type || 'unknown file type'}`;
+        } else if (error.code === 'file-too-large') {
+          const sizeMB = (rejection.file.size / 1024 / 1024).toFixed(1);
+          errorMessage = `File too large. Maximum size is 100MB, but your file is ${sizeMB}MB`;
+        } else {
+          errorMessage = error.message || "File upload failed";
+        }
+      }
+      
+      onProcessingError(errorMessage);
       return;
     }
 
     if (acceptedFiles.length > 0) {
       setSelectedFile(acceptedFiles[0]);
+      onProcessingError(null); // Clear any previous errors
     }
   }, [onProcessingError]);
 
@@ -139,31 +155,43 @@ export default function PDFUpload({
 
       {/* Error Message */}
       {errorMessage && (
-        <div className="mt-6 p-4 bg-red-50 border border-red-200 rounded-lg shadow-sm">
+        <div className="mt-6 p-6 bg-gradient-to-r from-red-50 to-red-100 border-l-4 border-red-400 rounded-lg shadow-sm">
           <div className="flex items-start">
             <div className="flex-shrink-0">
-              <AlertCircle className="h-5 w-5 text-red-400" />
+              <AlertCircle className="h-6 w-6 text-red-500" />
             </div>
-            <div className="ml-3 flex-1">
-              <h3 className="text-sm font-medium text-red-800">
-                Processing Failed
+            <div className="ml-4 flex-1">
+              <h3 className="text-base font-semibold text-red-800 mb-1">
+                Upload Error
               </h3>
-              <p className="text-sm text-red-700 mt-1">{errorMessage}</p>
-              <div className="mt-3 flex space-x-3">
+              <p className="text-sm text-red-700 leading-relaxed">{errorMessage}</p>
+              
+              {/* Helpful tips */}
+              <div className="mt-4 p-3 bg-white/70 rounded-md border border-red-200">
+                <p className="text-xs font-medium text-red-800 mb-2">💡 Tips:</p>
+                <ul className="text-xs text-red-700 space-y-1">
+                  <li>• Only PDF files (.pdf) are supported</li>
+                  <li>• Maximum file size is 100MB</li>
+                  <li>• Make sure the file isn't corrupted or password-protected</li>
+                </ul>
+              </div>
+              
+              <div className="mt-4 flex space-x-3">
                 <button
                   onClick={() => {
                     onProcessingError(null);
+                    setSelectedFile(null); // Clear selected file on dismiss
                   }}
-                  className="text-sm bg-red-100 text-red-800 px-3 py-1 rounded-md hover:bg-red-200 transition-colors"
+                  className="text-sm bg-white text-red-700 px-4 py-2 rounded-md border border-red-200 hover:bg-red-50 transition-colors font-medium"
                 >
-                  Dismiss
+                  Try Another File
                 </button>
-                {selectedFile && (
+                {selectedFile && selectedFile.type === 'application/pdf' && (
                   <button
                     onClick={handleUpload}
-                    className="text-sm bg-primary-600 text-white px-3 py-1 rounded-md hover:bg-primary-700 transition-colors"
+                    className="text-sm bg-red-600 text-white px-4 py-2 rounded-md hover:bg-red-700 transition-colors font-medium"
                   >
-                    Retry
+                    Retry Upload
                   </button>
                 )}
               </div>

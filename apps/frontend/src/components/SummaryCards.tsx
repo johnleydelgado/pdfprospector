@@ -1,5 +1,5 @@
 import { ExtractedReport } from '@/types/report'
-import { Target, Settings, Activity, Clock, Users, MapPin, TrendingUp, CheckCircle } from 'lucide-react'
+import { Target, Settings, Activity, Clock, Users, MapPin, TrendingUp } from 'lucide-react'
 
 interface SummaryCardsProps {
   data: ExtractedReport
@@ -70,11 +70,20 @@ export default function SummaryCards({ data }: SummaryCardsProps) {
       color: 'text-emerald-600',
       bgColor: 'bg-emerald-50',
     },
+    // Commented out - assessment doesn't require accuracy display
+    // {
+    //   title: 'Extraction Accuracy',
+    //   value: data.summary.extractionAccuracy ? `${data.summary.extractionAccuracy}%` : 'N/A',
+    //   subtitle: 'AI extraction quality',
+    //   icon: CheckCircle,
+    //   color: 'text-emerald-600',
+    //   bgColor: 'bg-emerald-50',
+    // },
     {
       title: 'Total Budget',
       value: totalBudget > 0 ? `$${(totalBudget / 1000000).toFixed(1)}M` : 'N/A',
       subtitle: 'Implementation cost',
-      icon: CheckCircle,
+      icon: TrendingUp,
       color: 'text-teal-600',
       bgColor: 'bg-teal-50',
     },

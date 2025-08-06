@@ -1,5 +1,6 @@
 import { ExtractedReport } from '../types/report'
 import { createError } from '../middleware/errorHandler'
+import * as XLSX from 'xlsx'
 
 export class ExportService {
   async exportData(data: ExtractedReport, format: 'json' | 'csv' | 'excel'): Promise<string | Buffer> {
@@ -22,25 +23,6 @@ export class ExportService {
   private exportAsCSV(data: ExtractedReport): string {
     const csvSections: string[] = []
 
-    // Create a simple, Excel-compatible CSV with just the main data
-    // Goals section - most important data first
-    if (data.goals.length > 0) {
-      csvSections.push('GOALS')
-      csvSections.push('ID,Title,Description,Status,Priority,Target Date')
-      data.goals.forEach(goal => {
-        const row = [
-          goal.id,
-          `"${goal.title}"`,
-          `"${goal.description}"`,
-          goal.status,
-          goal.priority,
-          goal.targetDate || ''
-        ].join(',')
-        csvSections.push(row)
-      })
-      csvSections.push('')
-    }
-
     // Goals section
     if (data.goals.length > 0) {
       csvSections.push('GOALS')
@@ -52,7 +34,7 @@ export class ExportService {
           `"${goal.description}"`,
           goal.status,
           goal.priority,
-          goal.targetDate || 'N/A'
+          goal.targetDate || ''
         ].join(',')
         csvSections.push(row)
       })
@@ -173,35 +155,116 @@ export class ExportService {
   }
 
   private exportAsExcel(data: ExtractedReport): Buffer {
-    // For now, return CSV format as Excel isn't implemented
-    // In a real implementation, you'd use a library like 'xlsx' or 'exceljs'
-    // to create actual Excel files with multiple sheets
+    const workbook = XLSX.utils.book_new()
     
-    const csvData = this.exportAsCSV(data)
+    // Create Summary sheet
+    const summaryData = [
+      { Metric: 'Total Goals', Value: data.summary.totalGoals },
+      { Metric: 'Total BMPs', Value: data.summary.totalBMPs },
+      { Metric: 'Completion Rate', Value: `${data.summary.completionRate}%` },
+      { Metric: 'Extraction Accuracy', Value: `${data.summary.extractionAccuracy}%` },
+      { Metric: 'Processing Time', Value: `${data.summary.processingTime}ms` }
+    ]
+    const summarySheet = XLSX.utils.json_to_sheet(summaryData)
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary')
     
-    // Convert CSV to basic Excel-compatible format
-    // This is a simplified implementation - in production you'd want proper Excel generation
-    return Buffer.from(csvData, 'utf-8')
+    // Create Goals sheet
+    if (data.goals.length > 0) {
+      const goalsSheet = XLSX.utils.json_to_sheet(data.goals.map(goal => ({
+        ID: goal.id,
+        Title: goal.title,
+        Description: goal.description,
+        Status: goal.status,
+        Priority: goal.priority,
+        'Target Date': goal.targetDate || 'N/A'
+      })))
+      XLSX.utils.book_append_sheet(workbook, goalsSheet, 'Goals')
+    }
+    
+    // Create BMPs sheet
+    if (data.bmps.length > 0) {
+      const bmpsSheet = XLSX.utils.json_to_sheet(data.bmps.map(bmp => ({
+        ID: bmp.id,
+        Name: bmp.name,
+        Description: bmp.description,
+        Category: bmp.category,
+        'Implementation Cost': bmp.implementationCost || 'N/A',
+        'Maintenance Cost': bmp.maintenanceCost || 'N/A',
+        'Effectiveness (%)': bmp.effectiveness,
+        'Applicable Areas': bmp.applicableAreas.join('; ')
+      })))
+      XLSX.utils.book_append_sheet(workbook, bmpsSheet, 'BMPs')
+    }
+    
+    // Create Implementation sheet
+    if (data.implementation.length > 0) {
+      const implSheet = XLSX.utils.json_to_sheet(data.implementation.map(impl => ({
+        ID: impl.id,
+        Name: impl.name,
+        Description: impl.description,
+        'Start Date': impl.startDate || 'N/A',
+        'End Date': impl.endDate || 'N/A',
+        Budget: impl.budget || 'N/A',
+        Responsible: impl.responsible,
+        Status: impl.status
+      })))
+      XLSX.utils.book_append_sheet(workbook, implSheet, 'Implementation')
+    }
+    
+    // Create Monitoring sheet
+    if (data.monitoring.length > 0) {
+      const monitoringSheet = XLSX.utils.json_to_sheet(data.monitoring.map(metric => ({
+        ID: metric.id,
+        Name: metric.name,
+        Description: metric.description,
+        Unit: metric.unit,
+        'Target Value': metric.targetValue || 'N/A',
+        'Current Value': metric.currentValue || 'N/A',
+        Frequency: metric.frequency,
+        Methodology: metric.methodology,
+        'Responsible Party': metric.responsibleParty
+      })))
+      XLSX.utils.book_append_sheet(workbook, monitoringSheet, 'Monitoring')
+    }
+    
+    // Create Outreach sheet
+    if (data.outreach.length > 0) {
+      const outreachSheet = XLSX.utils.json_to_sheet(data.outreach.map(activity => ({
+        ID: activity.id,
+        Name: activity.name,
+        Description: activity.description,
+        'Target Audience': activity.targetAudience,
+        Method: activity.method,
+        Timeline: activity.timeline,
+        'Expected Outcome': activity.expectedOutcome,
+        Budget: activity.budget || 'N/A'
+      })))
+      XLSX.utils.book_append_sheet(workbook, outreachSheet, 'Outreach')
+    }
+    
+    // Create Geographic Areas sheet
+    if (data.geographicAreas.length > 0) {
+      const geoSheet = XLSX.utils.json_to_sheet(data.geographicAreas.map(area => ({
+        ID: area.id,
+        Name: area.name,
+        Type: area.type,
+        Area: area.area,
+        Coordinates: area.coordinates ? `${area.coordinates.lat}, ${area.coordinates.lng}` : 'N/A',
+        Characteristics: area.characteristics.join('; ')
+      })))
+      XLSX.utils.book_append_sheet(workbook, geoSheet, 'Geographic Areas')
+    }
+    
+    // Create Metadata sheet
+    const metadataData = [
+      { Property: 'File Name', Value: data.metadata.fileName },
+      { Property: 'File Size', Value: `${data.metadata.fileSize} bytes` },
+      { Property: 'Extracted At', Value: data.metadata.extractedAt },
+      { Property: 'Processing Method', Value: data.metadata.processingMethod }
+    ]
+    const metadataSheet = XLSX.utils.json_to_sheet(metadataData)
+    XLSX.utils.book_append_sheet(workbook, metadataSheet, 'Metadata')
+    
+    return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
   }
 }
-
-// Note: For proper Excel export, you would install and use the 'xlsx' package:
-// 
-// import * as XLSX from 'xlsx'
-// 
-// private exportAsExcel(data: ExtractedReport): Buffer {
-//   const workbook = XLSX.utils.book_new()
-//   
-//   // Create separate sheets for each data type
-//   const summarySheet = XLSX.utils.json_to_sheet([data.summary])
-//   const goalsSheet = XLSX.utils.json_to_sheet(data.goals)
-//   const bmpsSheet = XLSX.utils.json_to_sheet(data.bmps)
-//   // ... etc
-//   
-//   XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary')
-//   XLSX.utils.book_append_sheet(workbook, goalsSheet, 'Goals')
-//   XLSX.utils.book_append_sheet(workbook, bmpsSheet, 'BMPs')
-//   // ... etc
-//   
-//   return XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' })
-// }

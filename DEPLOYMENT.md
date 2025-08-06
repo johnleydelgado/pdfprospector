@@ -259,7 +259,7 @@ RATE_LIMIT_MAX_REQUESTS=100         # Requests per window
 LOG_LEVEL=info                      # Log verbosity
 
 # Optional Model Override
-OPENAI_MODEL=gpt-4o-mini           # Default OpenAI model
+OPENAI_MODEL=gpt-4o-2024-11-20           # Default OpenAI model
 ANTHROPIC_MODEL=claude-3-haiku-20240307  # Default Anthropic model
 ```
 

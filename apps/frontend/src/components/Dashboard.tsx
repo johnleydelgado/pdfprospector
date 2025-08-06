@@ -10,7 +10,6 @@ import {
 
   FileText,
   Clock,
-  CheckCircle
 } from 'lucide-react'
 import SummaryCards from './SummaryCards'
 import DataTable from './DataTable'
@@ -57,15 +56,12 @@ export default function Dashboard({ data }: DashboardProps) {
             <span>Extracted: {new Date(data.metadata.extractedAt).toLocaleDateString()}</span>
             <span>•</span>
             <span>{(data.metadata.fileSize / 1024 / 1024).toFixed(2)} MB</span>
-            {data.summary.extractionAccuracy && (
-              <>
-                <span>•</span>
-                <span className="flex items-center space-x-1">
-                  <CheckCircle className="h-4 w-4 text-success-600" />
-                  <span>{data.summary.extractionAccuracy}% accuracy</span>
-                </span>
-              </>
-            )}
+            <span>•</span>
+            {/* Commented out - assessment doesn't require accuracy display */}
+            {/* <span className="flex items-center space-x-1">
+              <CheckCircle className="h-4 w-4 text-green-600" />
+              <span>{data.summary.extractionAccuracy || 'N/A'}% accuracy</span>
+            </span> */}
           </div>
         </div>
         <ExportButton data={data} />

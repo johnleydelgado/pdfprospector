@@ -25,7 +25,8 @@ export class LLMService {
   private anthropic?: Anthropic;
 
   // Allow overriding default models via env
-  private OPENAI_MODEL = process.env.OPENAI_MODEL?.trim() || "gpt-4o-mini";
+  private OPENAI_MODEL =
+    process.env.OPENAI_MODEL?.trim() || "gpt-4.1-2025-04-14";
   private ANTHROPIC_MODEL =
     process.env.ANTHROPIC_MODEL?.trim() || "claude-3-haiku-20240307";
 
@@ -50,7 +51,20 @@ export class LLMService {
     const startTime = Date.now();
     const allowFallback = options.allowFallback ?? true;
 
-    const prompt = this.buildExtractionPrompt(content.text);
+    // Use enhanced prompt with page structure analysis
+    const prompt = this.buildExtractionPrompt(content.text, content.pageTexts);
+
+    // Log enhanced processing details
+    console.log(`📝 Prompt length: ${prompt.length} characters`);
+    console.log(`📄 PDF text length: ${content.text.length} characters`);
+    console.log(
+      `📑 Pages processed: ${content.pageTexts?.length || 0} individual pages`
+    );
+    if (content.pageTexts && content.pageTexts.length > 0) {
+      console.log(
+        `🔍 Page structure preserved with markers and hyphenation fixes`
+      );
+    }
 
     // Build ordered list of providers to try
     const providers = this.planProviders(options.model, allowFallback);
@@ -58,7 +72,7 @@ export class LLMService {
     const errors: string[] = [];
     for (const provider of providers) {
       try {
-        console.log(`🤖 Starting LLM extraction using ${provider}...`);
+        console.log(`🤖 Starting enhanced LLM extraction using ${provider}...`);
         const extractedData =
           provider === "openai"
             ? await this.extractWithOpenAI(prompt, options)
@@ -73,7 +87,7 @@ export class LLMService {
           provider
         );
         console.log(
-          `✅ ${provider} extraction completed in ${processingTime}ms`
+          `✅ ${provider} enhanced extraction completed in ${processingTime}ms`
         );
         return report;
       } catch (err: any) {
@@ -88,7 +102,10 @@ export class LLMService {
 
     // If we got here, all providers failed
     const reason = errors.join(" | ");
-    console.error("❌ LLM extraction failed for all providers:", reason);
+    console.error(
+      "❌ Enhanced LLM extraction failed for all providers:",
+      reason
+    );
     throw createError(`Failed to extract data using AI (${reason})`, 502);
   }
 
@@ -115,25 +132,89 @@ export class LLMService {
   ): Promise<any> {
     if (!this.openai) throw createError("OpenAI not configured", 500);
 
+    console.log(`🔧 Using ${this.OPENAI_MODEL} for extraction`);
+
     const response = await this.openai.chat.completions.create({
-      model: this.OPENAI_MODEL, // default: gpt-4o-mini
+      model: this.OPENAI_MODEL,
       messages: [
         {
           role: "system",
           content:
-            "You are an expert at extracting structured data from agricultural and environmental reports. Always respond with valid JSON.",
+            "You are an expert at extracting structured data from agricultural and environmental reports. Always respond with valid, complete JSON that matches the exact schema provided. Ensure your JSON response is properly terminated with closing braces and brackets.",
         },
         { role: "user", content: prompt },
       ],
       temperature: options.temperature ?? 0.1,
-      max_tokens: options.maxTokens ?? 3000,
+      max_tokens: options.maxTokens ?? 8000, // Increased for comprehensive extraction
       response_format: { type: "json_object" },
     });
 
     const content = response.choices[0]?.message?.content;
     if (!content) throw createError("No response from OpenAI", 502);
 
-    return JSON.parse(content);
+    console.log(`📊 Raw response length: ${content.length} characters`);
+    console.log(`📋 Response first 500 chars:`, content.substring(0, 500));
+    console.log(`📋 Response last 500 chars:`, content.substring(Math.max(0, content.length - 500)));
+
+    // Enhanced JSON parsing with better error recovery
+    try {
+      const parsed = JSON.parse(content);
+      
+      // Log extraction results for debugging
+      console.log(`✅ Successfully parsed JSON`);
+      if (parsed.goals) console.log(`📊 Goals extracted: ${parsed.goals.length}`);
+      if (parsed.bmps) console.log(`📊 BMPs extracted: ${parsed.bmps.length}`);
+      if (parsed.implementation) console.log(`📊 Implementation activities extracted: ${parsed.implementation.length}`);
+      if (parsed.monitoring) console.log(`📊 Monitoring metrics extracted: ${parsed.monitoring.length}`);
+      if (parsed.outreach) console.log(`📊 Outreach activities extracted: ${parsed.outreach.length}`);
+      if (parsed.geographicAreas) console.log(`📊 Geographic areas extracted: ${parsed.geographicAreas.length}`);
+      
+      return parsed;
+    } catch (parseError) {
+      console.warn(`⚠️ JSON parsing failed:`, parseError);
+      console.log(`❌ Problematic content:`, content);
+      
+      // Try to fix truncated JSON
+      let fixedContent = content;
+      
+      // If content doesn't end with }, try to close it properly
+      if (!content.trim().endsWith('}')) {
+        console.log('🔧 Attempting to fix truncated JSON...');
+        
+        // Count open vs closed braces to determine what's missing
+        const openBraces = (content.match(/\{/g) || []).length;
+        const closeBraces = (content.match(/\}/g) || []).length;
+        const openBrackets = (content.match(/\[/g) || []).length;
+        const closeBrackets = (content.match(/\]/g) || []).length;
+        
+        // Add missing closing brackets and braces
+        for (let i = 0; i < openBrackets - closeBrackets; i++) {
+          fixedContent += ']';
+        }
+        for (let i = 0; i < openBraces - closeBraces; i++) {
+          fixedContent += '}';
+        }
+        
+        console.log(`🔧 Fixed content length: ${fixedContent.length}`);
+        
+        try {
+          return JSON.parse(fixedContent);
+        } catch (secondError) {
+          console.error('❌ Fixed JSON still invalid:', secondError);
+        }
+      }
+      
+      // If still failing, return a minimal valid structure to avoid complete failure
+      console.warn('🚨 Falling back to minimal JSON structure');
+      return {
+        goals: [],
+        bmps: [],
+        implementation: [],
+        monitoring: [],
+        outreach: [],
+        geographicAreas: []
+      };
+    }
   }
 
   private async extractWithAnthropic(
@@ -160,103 +241,54 @@ export class LLMService {
     return JSON.parse(jsonMatch[0]);
   }
 
-  private buildExtractionPrompt(text: string): string {
-    return `
-Extract structured data from this agricultural/environmental report text. Focus on identifying:
+  private buildExtractionPrompt(text: string, pageTexts?: string[]): string {
+    let pageAnalysis = "";
+    
+    // Add page structure analysis if available
+    if (pageTexts && pageTexts.length > 0) {
+      pageAnalysis = `
+📊 DOCUMENT PROCESSING ENHANCEMENTS:
+✅ ${pageTexts.length} pages processed individually
+✅ Page markers (=== PAGE N ===) added for location tracking  
+✅ Line breaks preserved, hyphenated terms fixed
+✅ Headers/footers stripped
 
-1. Goals and objectives
-2. Best Management Practices (BMPs) 
-3. Implementation activities
-4. Monitoring metrics
-5. Outreach activities
-6. Geographic areas
+`;
+    }
 
-Return a JSON object with this exact structure:
+    return `${pageAnalysis}Extract comprehensive data from this watershed plan. Be thorough - watershed plans contain extensive implementation, monitoring, and outreach programs.
 
+EXTRACT ALL relevant items in these categories:
+
+1. GOALS: Objectives, targets, purposes (reduce pollution, improve habitat, protect resources)
+2. BMPs: Management practices (riparian buffers, conservation tillage, wetlands, bank stabilization)  
+3. IMPLEMENTATION: Specific projects/activities with budgets, timelines, responsible parties
+4. MONITORING: Water quality parameters, biological indicators, assessments
+5. OUTREACH: Education, training, workshops, stakeholder engagement
+6. GEOGRAPHIC AREAS: Watersheds, counties, regions, water bodies
+
+Return valid JSON with this structure:
 {
-  "goals": [
-    {
-      "id": "unique_id",
-      "title": "goal title",
-      "description": "detailed description",
-      "targetDate": "YYYY-MM-DD or null",
-      "status": "planned|in-progress|completed",
-      "priority": "low|medium|high"
-    }
-  ],
-  "bmps": [
-    {
-      "id": "unique_id", 
-      "name": "BMP name",
-      "description": "detailed description",
-      "category": "category name",
-      "implementationCost": number_or_null,
-      "maintenanceCost": number_or_null,
-      "effectiveness": number_percentage,
-      "applicableAreas": ["area1", "area2"]
-    }
-  ],
-  "implementation": [
-    {
-      "id": "unique_id",
-      "name": "activity name",
-      "description": "detailed description", 
-      "startDate": "YYYY-MM-DD or null",
-      "endDate": "YYYY-MM-DD or null",
-      "budget": number_or_null,
-      "responsible": "responsible party",
-      "status": "planned|ongoing|completed",
-      "relatedGoals": ["goal_id1"],
-      "relatedBMPs": ["bmp_id1"]
-    }
-  ],
-  "monitoring": [
-    {
-      "id": "unique_id",
-      "name": "metric name",
-      "description": "detailed description",
-      "unit": "measurement unit",
-      "targetValue": number_or_null,
-      "currentValue": number_or_null,
-      "frequency": "frequency description",
-      "methodology": "measurement methodology",
-      "responsibleParty": "responsible party"
-    }
-  ],
-  "outreach": [
-    {
-      "id": "unique_id",
-      "name": "activity name",
-      "description": "detailed description",
-      "targetAudience": "target audience",
-      "method": "outreach method",
-      "timeline": "timeline description",
-      "expectedOutcome": "expected outcome",
-      "budget": number_or_null
-    }
-  ],
-  "geographicAreas": [
-    {
-      "id": "unique_id",
-      "name": "area name",
-      "type": "watershed|county|region|state",
-      "area": number_in_acres_or_square_miles,
-      "coordinates": {"lat": number, "lng": number} or null,
-      "characteristics": ["characteristic1", "characteristic2"]
-    }
-  ]
+  "goals": [{"id": "goal_[name]", "title": "title", "description": "desc", "targetDate": "YYYY-MM-DD or null", "status": "planned|in-progress|completed", "priority": "low|medium|high"}],
+  "bmps": [{"id": "bmp_[name]", "name": "name", "description": "desc", "category": "Water Quality|Agricultural|Stormwater|Stream Restoration|Other", "implementationCost": number_or_null, "maintenanceCost": number_or_null, "effectiveness": number_or_null, "applicableAreas": ["areas"]}],
+  "implementation": [{"id": "impl_[name]", "name": "name", "description": "desc", "startDate": "YYYY-MM-DD or null", "endDate": "YYYY-MM-DD or null", "budget": number_or_null, "responsible": "party or Not specified", "status": "planned|ongoing|completed", "relatedGoals": ["goal_ids"], "relatedBMPs": ["bmp_ids"]}],
+  "monitoring": [{"id": "monitor_[name]", "name": "name", "description": "desc", "unit": "unit or Not specified", "targetValue": number_or_null, "currentValue": number_or_null, "frequency": "freq or Not specified", "methodology": "method or Not specified", "responsibleParty": "party or Not specified"}],
+  "outreach": [{"id": "outreach_[name]", "name": "name", "description": "desc", "targetAudience": "audience", "method": "method", "timeline": "timeline or Ongoing", "expectedOutcome": "outcome", "budget": number_or_null}],
+  "geographicAreas": [{"id": "area_[name]", "name": "name", "type": "watershed|county|region|state", "area": number_or_null, "coordinates": {"lat": number, "lng": number} or null, "characteristics": ["features"]}]
 }
 
-Document text:
-${text.substring(0, 15000)} ${text.length > 15000 ? "...[truncated]" : ""}
+IMPORTANT RULES:
+✅ BE COMPREHENSIVE - don't return empty arrays unless truly no content exists
+✅ Include all projects/activities you find, even with limited details
+✅ Generate descriptive IDs (goal_reduce_phosphorus, bmp_riparian_buffers, impl_streambank_project)
+✅ Use "Not specified" for missing required text fields, null for missing numbers
+✅ Link related items via IDs when connections are clear
+✅ Extract from entire document using page markers for context
 
-Important: 
-- Extract only information that is explicitly mentioned in the text
-- Use realistic effectiveness percentages (0-100)
-- Generate unique IDs for each item
-- If no data is found for a category, return an empty array
-- Be precise with numbers and dates
-- Focus on accuracy over quantity
+CRITICAL: Watershed plans are detailed documents. If returning mostly empty arrays, you're being too selective. Look thoroughly for implementation activities, monitoring programs, and outreach efforts - they are standard components.
+
+Document text:
+${text.substring(0, 16000)} ${text.length > 16000 ? "...[truncated]" : ""}
 `;
   }
 

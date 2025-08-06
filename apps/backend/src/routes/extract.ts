@@ -87,6 +87,7 @@ router.post(
         {
           model: req.body.model || undefined, // Allow frontend to specify model
           temperature: 0.1, // Low temperature for consistent extraction
+          allowFallback: false, // Disable Anthropic fallback due to credit issue
         }
       );
 
@@ -113,7 +114,5 @@ router.post(
     }
   })
 );
-
-;
 
 export default router;
